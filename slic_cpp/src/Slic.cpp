@@ -43,17 +43,24 @@ Slic::Slic(string inputFile, int k, double m){
     }
   }
 
-  this->drawCentres();
+  Mat initialCentres = this->drawCentres();
+  imwrite("initialCentres.png", initialCentres);
 
   // Calculate the gradient image to reposition the centres slightly
   Mat gradient = this->calculateGradientImage();
+  for(int i=0; i<centres.size();i++){
+    centres[i]->reposition(gradient);
+  }
+
+  Mat secondCentres = this->drawCentres();
+  imwrite("secondCentres.png", secondCentres);
 
   // Show the gradient
-  namedWindow( "Gradient", CV_WINDOW_AUTOSIZE );
-  imshow( "Gradient", greyImage );
-  waitKey(0);
-  imshow( "Gradient", gradient );
-  waitKey(0);
+  // namedWindow( "Gradient", CV_WINDOW_AUTOSIZE );
+  // imshow( "Gradient", greyImage );
+  // waitKey(0);
+  // imshow( "Gradient", gradient );
+  // waitKey(0);
 
   // Read the pixel values into the class
   Pixel** pixelGrid = new Pixel*[image.rows];
@@ -78,19 +85,22 @@ Slic::Slic(string inputFile, int k, double m){
   //this->iterate();
 }
 
-void Slic::drawCentres(){
+Mat Slic::drawCentres(bool gui){
   Mat markedImage = image.clone();
 
   for(int i=0; i<centres.size();i++){
     circle(markedImage, Point(centres[i]->x, centres[i]->y),S/2, Scalar(255,255,255));
   }
+  if(gui){
+    // Show the image
+    cvtColor(markedImage, markedImage, CV_Lab2BGR);
+    namedWindow( "Centres", CV_WINDOW_AUTOSIZE );
+    imshow( "Centres", markedImage );
 
-  // Show the image
-  cvtColor(markedImage, markedImage, CV_Lab2BGR);
-  namedWindow( "Centres", CV_WINDOW_AUTOSIZE );
-  imshow( "Centres", markedImage );
+    waitKey(0);
+  }
 
-  waitKey(0);
+  return markedImage;
 }
 
 Mat Slic::calculateGradientImage(){
@@ -122,7 +132,7 @@ Mat Slic::calculateGradientImage(){
   double min, max;
   minMaxLoc(mag, &min, &max);
   mag = 255*(mag/max);
-  
+
   return mag;
 }
 
