@@ -1,6 +1,5 @@
 *.o
 *.O
-bin/
-/obj
-test.png
+slic_cpp/bin/
+slic_cpp/obj/
 *.png
