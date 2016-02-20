@@ -16,6 +16,7 @@ class Pixel{
 public:
   Pixel(int x, int y, int l, int a, int b, double S, double m);
   Pixel(int x, int y);
+  Pixel();
   ~Pixel();
 
   // Distance measure to centre

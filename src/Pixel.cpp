@@ -14,6 +14,11 @@ Pixel::Pixel(int x, int y, int l, int a, int b, double S, double m){
   this->m = m;
 }
 
+Pixel::Pixel(){
+  this->d = 100000;
+  this->centre = NULL;
+}
+
 Pixel::~Pixel(){
 
 }

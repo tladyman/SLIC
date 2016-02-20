@@ -1,6 +1,7 @@
 #include "Slic.h"
 
-Slic::Slic(string inputFile, int k){
+Slic::Slic(string inputFile, int k, double m){
+  this->m = m;
   this->inputFile = inputFile;
 
   // Load the image
@@ -53,6 +54,28 @@ Slic::Slic(string inputFile, int k){
   waitKey(0);
   imshow( "Gradient", gradient );
   waitKey(0);
+
+  // Read the pixel values into the class
+  Pixel** pixelGrid = new Pixel*[image.rows];
+  for(int i = 0; i < image.rows; ++i) {
+    pixelGrid[i] = new Pixel[image.cols];
+  }
+
+  for(int i = 0; i < image.rows; i++){
+    for(int j = 0; j < image.cols; j++){
+      pixelGrid[i][j].l = image.at<cv::Vec3b>(i,j)[0];
+      pixelGrid[i][j].a = image.at<cv::Vec3b>(i,j)[1];
+      pixelGrid[i][j].b = image.at<cv::Vec3b>(i,j)[2];
+
+      pixelGrid[i][j].x = j;
+      pixelGrid[i][j].y = i;
+
+      pixelGrid[i][j].S = S;
+      pixelGrid[i][j].m = m;
+    }
+  }
+  // Iterate
+  //this->iterate();
 }
 
 void Slic::drawCentres(){
@@ -75,10 +98,10 @@ Mat Slic::calculateGradientImage(){
   Mat kernelH, kernelV;
   kernelH = Mat::zeros( 3, 3, CV_32F );
   kernelV = Mat::zeros( 3, 3, CV_32F );
-  kernelH.at<Vec3b>(Point(1,0)) = -1;
-  kernelH.at<Vec3b>(Point(1,2)) = 1;
-  kernelV.at<Vec3b>(Point(0,1)) = -1;
-  kernelV.at<Vec3b>(Point(2,1)) = 1;
+  kernelH.at<float>(Point(1,0)) = -1;
+  kernelH.at<float>(Point(1,2)) = 1;
+  kernelV.at<float>(Point(0,1)) = -1;
+  kernelV.at<float>(Point(2,1)) = 1;
   // (-1,-1) anchor is centre, -1 ddepth is same as source
   Point anchor = Point(-1, -1);
   int ddepth = -1;
@@ -95,19 +118,52 @@ Mat Slic::calculateGradientImage(){
   dx.convertTo(dx, CV_32F);
   mag.convertTo(mag, CV_32F);
 
-  cout<<"dy: " << dy.size()<< " " << dy.type() <<endl;
-  cout<<"dx: " << dx.size()<< " " << dx.type()<<endl;
-  cout<<"mag: " << mag.size()<< " " << mag.type()<< " " << countNonZero(mag)<<endl;
-
   magnitude(dy, dx, mag);
   double min, max;
   minMaxLoc(mag, &min, &max);
   mag = 255*(mag/max);
+  
   return mag;
+}
+
+void Slic::iterate(){
+  // For each centre
+  for(int i=0; i<centres.size();i++){
+    // Search the 2S by 2S region around the centre
+    for(int y = centres[i]->y - (2*S); y < centres[i]->y + (2*S); y++){
+      // Constrained by image size
+      if(y<0){
+        y = 0;
+      }
+      if(y > image.rows){
+        break;
+      }
+      for(int x = centres[i]->x - (2*S); x < centres[i]->x + (2*S); x++){
+        // Constrained by image size
+        if(x<0){
+          x = 0;
+        }
+        if(x > image.cols){
+          break;
+        }
+        // Calculate distance from this point to the centre
+        // and update if less
+        double distance = pixelGrid[y][x].distanceToCentre(centres[i]);
+        if(distance <  pixelGrid[y][x].d){
+          pixelGrid[y][x].d = distance;
+          pixelGrid[y][x].centre = centres[i];
+        }
+      }
+    }
+  }
 }
 
 Slic::~Slic(){
   for(int i=0; i<centres.size();i++){
     delete centres[i];
   }
+  for(int i = 0; i < image.rows; ++i) {
+    delete [] pixelGrid[i];
+  }
+  delete [] pixelGrid;
 }
