@@ -39,7 +39,7 @@ Slic::Slic(string inputFile, int k, double m){
   // Create the centres:
   for(int j=0; j<nCentreRows; j++){
     for(int i=0; i<centresPerRow; i++){
-      centres.push_back(new Centre(((j%2)*S) + (i*S), S+(j*vSpacing)));
+      centres.push_back(new Centre(((j%2)*S) + (i*S), S+(j*vSpacing), image.at<cv::Vec3b>(i,j)[0], image.at<cv::Vec3b>(i,j)[1], image.at<cv::Vec3b>(i,j)[2]));
     }
   }
 
@@ -63,7 +63,7 @@ Slic::Slic(string inputFile, int k, double m){
   // waitKey(0);
 
   // Read the pixel values into the class
-  Pixel** pixelGrid = new Pixel*[image.rows];
+  pixelGrid = new Pixel*[image.rows];
   for(int i = 0; i < image.rows; ++i) {
     pixelGrid[i] = new Pixel[image.cols];
   }
@@ -82,7 +82,7 @@ Slic::Slic(string inputFile, int k, double m){
     }
   }
   // Iterate
-  //this->iterate();
+  this->iterate();
 }
 
 Mat Slic::drawCentres(bool gui){
@@ -161,7 +161,7 @@ void Slic::iterate(){
         double distance = pixelGrid[y][x].distanceToCentre(centres[i]);
         if(distance <  pixelGrid[y][x].d){
           pixelGrid[y][x].d = distance;
-          pixelGrid[y][x].centre = centres[i];
+          pixelGrid[y][x].currentCentre = centres[i];
         }
       }
     }

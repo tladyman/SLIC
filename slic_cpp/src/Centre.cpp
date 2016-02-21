@@ -1,8 +1,12 @@
 #include "Centre.h"
 
-Centre::Centre(int x, int y){
+Centre::Centre(int x, int y, int l, int a, int b){
   this->x = x;
   this->y = y;
+
+  this->l = 0;
+  this->a = 0;
+  this->b = 0;
 
   this->startX = x;
   this->startY = y;
