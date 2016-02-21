@@ -18,7 +18,7 @@ public:
   Slic(string inputFile, int k, double m);
   ~Slic();
 
-  void drawCentres();
+  Mat drawCentres(bool gui = false);
   Mat calculateGradientImage();
   void iterate();
 private:

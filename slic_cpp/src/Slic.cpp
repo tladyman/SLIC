@@ -39,24 +39,31 @@ Slic::Slic(string inputFile, int k, double m){
   // Create the centres:
   for(int j=0; j<nCentreRows; j++){
     for(int i=0; i<centresPerRow; i++){
-      centres.push_back(new Centre(((j%2)*S) + (i*S), S+(j*vSpacing)));
+      centres.push_back(new Centre(((j%2)*S) + (i*S), S+(j*vSpacing), image.at<cv::Vec3b>(i,j)[0], image.at<cv::Vec3b>(i,j)[1], image.at<cv::Vec3b>(i,j)[2]));
     }
   }
 
-  this->drawCentres();
+  Mat initialCentres = this->drawCentres();
+  imwrite("initialCentres.png", initialCentres);
 
   // Calculate the gradient image to reposition the centres slightly
   Mat gradient = this->calculateGradientImage();
+  for(int i=0; i<centres.size();i++){
+    centres[i]->reposition(gradient);
+  }
+
+  Mat secondCentres = this->drawCentres();
+  imwrite("secondCentres.png", secondCentres);
 
   // Show the gradient
-  namedWindow( "Gradient", CV_WINDOW_AUTOSIZE );
-  imshow( "Gradient", greyImage );
-  waitKey(0);
-  imshow( "Gradient", gradient );
-  waitKey(0);
+  // namedWindow( "Gradient", CV_WINDOW_AUTOSIZE );
+  // imshow( "Gradient", greyImage );
+  // waitKey(0);
+  // imshow( "Gradient", gradient );
+  // waitKey(0);
 
   // Read the pixel values into the class
-  Pixel** pixelGrid = new Pixel*[image.rows];
+  pixelGrid = new Pixel*[image.rows];
   for(int i = 0; i < image.rows; ++i) {
     pixelGrid[i] = new Pixel[image.cols];
   }
@@ -75,22 +82,25 @@ Slic::Slic(string inputFile, int k, double m){
     }
   }
   // Iterate
-  //this->iterate();
+  this->iterate();
 }
 
-void Slic::drawCentres(){
+Mat Slic::drawCentres(bool gui){
   Mat markedImage = image.clone();
 
   for(int i=0; i<centres.size();i++){
     circle(markedImage, Point(centres[i]->x, centres[i]->y),S/2, Scalar(255,255,255));
   }
+  if(gui){
+    // Show the image
+    cvtColor(markedImage, markedImage, CV_Lab2BGR);
+    namedWindow( "Centres", CV_WINDOW_AUTOSIZE );
+    imshow( "Centres", markedImage );
 
-  // Show the image
-  cvtColor(markedImage, markedImage, CV_Lab2BGR);
-  namedWindow( "Centres", CV_WINDOW_AUTOSIZE );
-  imshow( "Centres", markedImage );
+    waitKey(0);
+  }
 
-  waitKey(0);
+  return markedImage;
 }
 
 Mat Slic::calculateGradientImage(){
@@ -122,7 +132,7 @@ Mat Slic::calculateGradientImage(){
   double min, max;
   minMaxLoc(mag, &min, &max);
   mag = 255*(mag/max);
-  
+
   return mag;
 }
 
@@ -151,7 +161,7 @@ void Slic::iterate(){
         double distance = pixelGrid[y][x].distanceToCentre(centres[i]);
         if(distance <  pixelGrid[y][x].d){
           pixelGrid[y][x].d = distance;
-          pixelGrid[y][x].centre = centres[i];
+          pixelGrid[y][x].currentCentre = centres[i];
         }
       }
     }
