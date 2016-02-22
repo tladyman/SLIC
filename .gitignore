@@ -3,3 +3,5 @@
 slic_cpp/bin/
 slic_cpp/obj/
 *.png
+.ipynb_checkpoints/
+.DS_Store
