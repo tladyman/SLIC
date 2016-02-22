@@ -12,16 +12,20 @@
 using namespace std;
 using namespace cv;
 
+// Forward declaration for circular dependency
+class Centre;
+
 class Pixel{
 public:
   Pixel(int x, int y, int l, int a, int b, double S, double m);
   Pixel(int x, int y);
   Pixel();
-  Pixel(const Pixel&);
   ~Pixel();
 
   // Distance measure to centre
   double distanceToCentre(Centre* centre);
+
+  void addToCentre();
 
   int l,a,b,x,y;
   double d, S, m;

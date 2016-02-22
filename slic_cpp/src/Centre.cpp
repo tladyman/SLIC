@@ -66,3 +66,33 @@ void Centre::reposition(Mat gradientImage, int n){
   x = currentX;
   y = currentY;
 }
+
+void Centre::addPixel(Pixel* pixel){
+  pixels.push_back(pixel);
+}
+
+void Centre::clearPixels(){
+  pixels.clear();
+}
+
+void Centre::update(){
+  long long sumL, sumA, sumB, sumX, sumY;
+  int N = pixels.size();
+  for(int i=0; i<N;i++){
+    sumL += pixels[i]->l;
+    sumA += pixels[i]->a;
+    sumB += pixels[i]->b;
+    sumX += pixels[i]->x;
+    sumY += pixels[i]->y;
+  }
+
+  sumL = sumL /N;
+  sumA = sumA /N;
+  sumB = sumB /N;
+  sumX = sumX /N;
+  sumY = sumY /N;
+
+  l = sumL;
+  a = sumA;
+  b = sumB;
+}
