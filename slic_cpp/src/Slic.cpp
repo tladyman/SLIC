@@ -81,8 +81,17 @@ Slic::Slic(string inputFile, int k, double m){
       pixelGrid[i][j].m = m;
     }
   }
+
+  // TODO: Initialise centre colours in the 2S grid
+  // for(int i=0; i<centres.size();i++){
+  //   centres[i]->initialiseColour(pixelGrid, image.rows, image.cols);
+  // }
+
   // Iterate
   this->iterate();
+
+  Mat lowRes = this->drawLowResolution(true);
+  imwrite("lowRes.png", lowRes);
 }
 
 Mat Slic::drawCentres(bool gui){
@@ -90,6 +99,29 @@ Mat Slic::drawCentres(bool gui){
 
   for(int i=0; i<centres.size();i++){
     circle(markedImage, Point(centres[i]->x, centres[i]->y),S/2, Scalar(255,255,255));
+  }
+  if(gui){
+    // Show the image
+    cvtColor(markedImage, markedImage, CV_Lab2BGR);
+    namedWindow( "Centres", CV_WINDOW_AUTOSIZE );
+    imshow( "Centres", markedImage );
+
+    waitKey(0);
+  }
+
+  return markedImage;
+}
+
+Mat Slic::drawLowResolution(bool gui){
+  Mat markedImage = image.clone();
+
+  for(int i=0; i<centres.size();i++){
+    cout<< "Super: "<< i << " : " << centres[i]->pixels.size() << " l: " << centres[i]->l<<endl;
+    for(int j=0; j<centres[i]->pixels.size();j++){
+      markedImage.at<cv::Vec3b>(Point(centres[i]->pixels[j]->x,centres[i]->pixels[j]->y))[0] = (int)centres[i]->l;
+      markedImage.at<cv::Vec3b>(Point(centres[i]->pixels[j]->x,centres[i]->pixels[j]->y))[1] = (int)centres[i]->a;
+      markedImage.at<cv::Vec3b>(Point(centres[i]->pixels[j]->x,centres[i]->pixels[j]->y))[2] = (int)centres[i]->b;
+    }
   }
   if(gui){
     // Show the image
@@ -137,6 +169,12 @@ Mat Slic::calculateGradientImage(){
 }
 
 void Slic::iterate(){
+  // Remove old assignments
+  for(int i=0; i<centres.size();i++){
+    centres[i]->clearPixels();
+  }
+
+  // Assignment stage
   // For each centre
   for(int i=0; i<centres.size();i++){
     // Search the 2S by 2S region around the centre
@@ -166,6 +204,19 @@ void Slic::iterate(){
       }
     }
   }
+
+  // Update the centre lists
+  for(int y = 0; y < image.rows; y++){
+    for(int x = 0; x < image.cols; x++){
+      pixelGrid[y][x].addToCentre();
+    }
+  }
+  // Update stage
+  // Update centres
+  for(int i=0; i<centres.size();i++){
+    centres[i]->update();
+  }
+  // Compute Error, E
 }
 
 Slic::~Slic(){

@@ -7,9 +7,13 @@
 #include "opencv2/opencv.hpp"
 #include "opencv2/highgui/highgui.hpp"
 
+#include "Pixel.h"
 
 using namespace std;
 using namespace cv;
+
+// Forward declaration for circular dependency
+class Pixel;
 
 class Centre{
 public:
@@ -23,9 +27,16 @@ public:
   // Reset to the original position to avoid recomputation
   void reset();
 
+  // Handle the list of child pixels
+  void addPixel(Pixel* pixel);
+  void clearPixels();
+  void update();
+
   double l,a,b,x,y;
 
   double startX, startY;
+
+  vector<Pixel*> pixels;
 };
 
 #endif // CENTRE_H

@@ -39,3 +39,9 @@ double Pixel::distanceToCentre(Centre* centre){
   double D = sqrt( pow(dc,2) + pow(ds/S,2)*pow(m,2) );
   return D;
 }
+
+void Pixel::addToCentre(){
+  if(currentCentre != NULL){
+    currentCentre->addPixel(this);
+  }
+}
