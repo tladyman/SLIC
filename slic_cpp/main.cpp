@@ -45,7 +45,7 @@ int main (int ac, char *av[]){
 
   // cout<<inputFile<<endl;
 
-  Slic slic(inputFile, 1479, 1);
+  Slic slic(inputFile, 1479, 40);
 
   cout<<"****Ending program****"<<endl;
   return 0;

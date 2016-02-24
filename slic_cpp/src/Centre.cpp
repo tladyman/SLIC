@@ -85,13 +85,19 @@ void Centre::update(){
     sumX += pixels[i]->x;
     sumY += pixels[i]->y;
   }
-
-  sumL = sumL /N;
-  sumA = sumA /N;
-  sumB = sumB /N;
-  sumX = sumX /N;
-  sumY = sumY /N;
-
+  if(N != 0) {
+    sumL = sumL /N;
+    sumA = sumA /N;
+    sumB = sumB /N;
+    sumX = sumX /N;
+    sumY = sumY /N;
+  } else {
+    sumL = 0;
+    sumA = 0;
+    sumB = 0;
+    sumX = 0;
+    sumY = 0;
+  }
   l = sumL;
   a = sumA;
   b = sumB;
