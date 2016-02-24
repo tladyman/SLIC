@@ -43,8 +43,10 @@ Slic::Slic(string inputFile, int k, double m){
     }
   }
 
-  Mat initialCentres = this->drawCentres();
+  Mat initialCentres = this->drawCentres(true);
   imwrite("initialCentres.png", initialCentres);
+
+
 
   // Calculate the gradient image to reposition the centres slightly
   Mat gradient = this->calculateGradientImage();
@@ -52,8 +54,9 @@ Slic::Slic(string inputFile, int k, double m){
     centres[i]->reposition(gradient);
   }
 
-  Mat secondCentres = this->drawCentres();
+  Mat secondCentres = this->drawCentres(true);
   imwrite("secondCentres.png", secondCentres);
+
 
   // Show the gradient
   // namedWindow( "Gradient", CV_WINDOW_AUTOSIZE );
@@ -88,10 +91,15 @@ Slic::Slic(string inputFile, int k, double m){
   // }
 
   // Iterate
-  this->iterate();
+  for(int i = 0; i<10; i++){
+    this->iterate();
+  }
+  Mat  lowRes = this->drawLowResolution(true);
+  Mat  boundary = this->drawBoundaries(true);
 
-  Mat lowRes = this->drawLowResolution(true);
   imwrite("lowRes.png", lowRes);
+  imwrite("boundary.png", boundary);
+  
 }
 
 Mat Slic::drawCentres(bool gui){
@@ -126,8 +134,37 @@ Mat Slic::drawLowResolution(bool gui){
   if(gui){
     // Show the image
     cvtColor(markedImage, markedImage, CV_Lab2BGR);
-    namedWindow( "Centres", CV_WINDOW_AUTOSIZE );
-    imshow( "Centres", markedImage );
+    namedWindow( "Super Pixels", CV_WINDOW_AUTOSIZE );
+    imshow( "Super Pixels", markedImage );
+
+    waitKey(0);
+  }
+
+  return markedImage;
+}
+
+Mat Slic::drawBoundaries(bool gui){
+  Mat markedImage = this->drawLowResolution();
+
+  for(int i = 0; i < image.rows; i++){
+    for(int j = 0; j < image.cols; j++){
+      Centre* thisCentre = pixelGrid[i][j].currentCentre;
+      if((i-1 > 0) &&(j-1 > 0)) {
+        if((pixelGrid[i-1][j-1].currentCentre != thisCentre) || (pixelGrid[i-1][j].currentCentre != thisCentre) || (pixelGrid[i][j-1].currentCentre != thisCentre)){
+          markedImage.at<cv::Vec3b>(Point(j,i))[0] = 0;
+          markedImage.at<cv::Vec3b>(Point(j,i))[1] = 0;
+          markedImage.at<cv::Vec3b>(Point(j,i))[2] = 0;
+        }
+      }
+    }
+  }
+
+
+  if(gui){
+    // Show the image
+    cvtColor(markedImage, markedImage, CV_Lab2BGR);
+    namedWindow( "Super Pixels", CV_WINDOW_AUTOSIZE );
+    imshow( "Super Pixels", markedImage );
 
     waitKey(0);
   }

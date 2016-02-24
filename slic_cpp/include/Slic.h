@@ -20,6 +20,7 @@ public:
 
   Mat drawCentres(bool gui = false);
   Mat drawLowResolution(bool gui = false);
+  Mat drawBoundaries(bool gui = false);
   Mat calculateGradientImage();
   void iterate();
 private:
