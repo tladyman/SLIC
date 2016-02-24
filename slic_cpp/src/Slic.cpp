@@ -1,6 +1,8 @@
 #include "Slic.h"
 
-Slic::Slic(string inputFile, int k, double m){
+Slic::Slic(string inputFile, string outputLoc, int k, double m, bool stages, bool saveOutput, bool showGui){
+  this->outputFolder = outputLoc + "/";
+
   this->m = m;
   this->inputFile = inputFile;
 
@@ -8,6 +10,12 @@ Slic::Slic(string inputFile, int k, double m){
   this->image = imread(inputFile);
   if(!image.data ) {
     cout <<  "Could not open or find the image" << endl ;
+  }
+
+  // Show the input image
+  if(showGui){
+    namedWindow( "Input", CV_WINDOW_AUTOSIZE );
+    imshow( "Input", image );
   }
 
   // Create a grey version for magnitude etc
@@ -26,7 +34,8 @@ Slic::Slic(string inputFile, int k, double m){
   this->S = sqrt( (image.cols * image.rows) / (k*sqrt(3)/2));
   // Centres per row allowing 0.5 S spacing at one edge.
   // Edge alternates
-  int centresPerRow = round(image.rows/(sqrt(3)/2*S));
+  //int centresPerRow = round(image.rows/(sqrt(3)/2*S));
+  int centresPerRow = round(image.cols/S - 0.5);
   // Given an integer number of nodes per row recompute S
   S = image.cols/(centresPerRow + 0.5);
   // Get number of rows of centres assuming the same hexagonal
@@ -35,6 +44,7 @@ Slic::Slic(string inputFile, int k, double m){
   this->vSpacing = image.rows/nCentreRows;
   // Recompute k so that the structure is posisble
   this->k = nCentreRows * centresPerRow;
+  cout<<"k: "<<this->k<<endl;
 
   // Create the centres:
   for(int j=0; j<nCentreRows; j++){
@@ -43,10 +53,13 @@ Slic::Slic(string inputFile, int k, double m){
     }
   }
 
-  Mat initialCentres = this->drawCentres(true);
-  imwrite("initialCentres.png", initialCentres);
-
-
+  // Save the initial centres
+  if( (showGui || saveOutput) && stages) {
+    Mat initialCentres = this->drawCentres(showGui);
+    if(saveOutput){
+      imwrite(outputFolder + "initialCentres.png", initialCentres);
+    }
+  }
 
   // Calculate the gradient image to reposition the centres slightly
   Mat gradient = this->calculateGradientImage();
@@ -54,16 +67,18 @@ Slic::Slic(string inputFile, int k, double m){
     centres[i]->reposition(gradient);
   }
 
-  Mat secondCentres = this->drawCentres(true);
-  imwrite("secondCentres.png", secondCentres);
+  // Save the wiggled centres
+  if( (showGui || saveOutput) && stages) {
+    Mat secondCentres = this->drawCentres(showGui);
+    if(saveOutput){
+      imwrite(outputFolder + "secondCentres.png", secondCentres);
+    }
+  }
 
-
-  // Show the gradient
-  // namedWindow( "Gradient", CV_WINDOW_AUTOSIZE );
-  // imshow( "Gradient", greyImage );
-  // waitKey(0);
-  // imshow( "Gradient", gradient );
-  // waitKey(0);
+  // Save the gradient
+  if( saveOutput && stages) {
+    imwrite(outputFolder + "gradient.png", gradient);
+  }
 
   // Read the pixel values into the class
   pixelGrid = new Pixel*[image.rows];
@@ -90,16 +105,32 @@ Slic::Slic(string inputFile, int k, double m){
   //   centres[i]->initialiseColour(pixelGrid, image.rows, image.cols);
   // }
 
-  // Iterate
-  for(int i = 0; i<10; i++){
-    this->iterate();
-  }
-  Mat  lowRes = this->drawLowResolution(true);
-  Mat  boundary = this->drawBoundaries(true);
 
-  imwrite("lowRes.png", lowRes);
-  imwrite("boundary.png", boundary);
-  
+  // Iterate
+  int nIterations = 10;
+  for(int i = 0; i<nIterations; i++){
+    this->iterate();
+    // Save the images
+    if( ((showGui || saveOutput) && stages) || (showGui && (i==nIterations-1)) ) {
+      Mat iteration = this->drawLowResolution();
+      Mat boundary = this->drawBoundaries();
+
+      if(showGui){
+        namedWindow( "Low Resolution", CV_WINDOW_AUTOSIZE );
+        imshow( "Low Resolution", iteration );
+
+        namedWindow( "Boundaries", CV_WINDOW_AUTOSIZE );
+        imshow( "Boundaries", boundary );
+
+        waitKey(0);
+      }
+      if(saveOutput){
+        imwrite(outputFolder + ("iteration_" + to_string(i) + ".png"), iteration);
+        imwrite(outputFolder + ("boundary_" + to_string(i) + ".png"), boundary);
+      }
+    }
+  }
+
 }
 
 Mat Slic::drawCentres(bool gui){
@@ -110,12 +141,13 @@ Mat Slic::drawCentres(bool gui){
   }
   if(gui){
     // Show the image
-    cvtColor(markedImage, markedImage, CV_Lab2BGR);
+    //cvtColor(markedImage, markedImage, CV_Lab2BGR);
     namedWindow( "Centres", CV_WINDOW_AUTOSIZE );
     imshow( "Centres", markedImage );
 
     waitKey(0);
   }
+  cvtColor(markedImage, markedImage, CV_Lab2BGR);
 
   return markedImage;
 }
@@ -124,16 +156,15 @@ Mat Slic::drawLowResolution(bool gui){
   Mat markedImage = image.clone();
 
   for(int i=0; i<centres.size();i++){
-    cout<< "Super: "<< i << " : " << centres[i]->pixels.size() << " l: " << centres[i]->l<<endl;
     for(int j=0; j<centres[i]->pixels.size();j++){
       markedImage.at<cv::Vec3b>(Point(centres[i]->pixels[j]->x,centres[i]->pixels[j]->y))[0] = (int)centres[i]->l;
       markedImage.at<cv::Vec3b>(Point(centres[i]->pixels[j]->x,centres[i]->pixels[j]->y))[1] = (int)centres[i]->a;
       markedImage.at<cv::Vec3b>(Point(centres[i]->pixels[j]->x,centres[i]->pixels[j]->y))[2] = (int)centres[i]->b;
     }
   }
+  cvtColor(markedImage, markedImage, CV_Lab2BGR);
   if(gui){
     // Show the image
-    cvtColor(markedImage, markedImage, CV_Lab2BGR);
     namedWindow( "Super Pixels", CV_WINDOW_AUTOSIZE );
     imshow( "Super Pixels", markedImage );
 
@@ -159,10 +190,10 @@ Mat Slic::drawBoundaries(bool gui){
     }
   }
 
-
+  //cvtColor(markedImage, markedImage, CV_Lab2BGR);
   if(gui){
     // Show the image
-    cvtColor(markedImage, markedImage, CV_Lab2BGR);
+    //cvtColor(markedImage, markedImage, CV_Lab2BGR);
     namedWindow( "Super Pixels", CV_WINDOW_AUTOSIZE );
     imshow( "Super Pixels", markedImage );
 
@@ -220,7 +251,7 @@ void Slic::iterate(){
       if(y<0){
         y = 0;
       }
-      if(y > image.rows){
+      if(y >= image.rows){
         break;
       }
       for(int x = centres[i]->x - (2*S); x < centres[i]->x + (2*S); x++){
